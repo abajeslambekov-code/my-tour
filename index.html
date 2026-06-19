@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Интерактивная карта участков</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; font-family: sans-serif; }
+        #panorama { width: 100%; height: 100%; }
+        .green-zone {
+            width: 40px; height: 40px;
+            background: rgba(0, 255, 0, 0.35);
+            border: 2px solid #00ff00;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .green-zone:hover { background: rgba(0, 255, 0, 0.6); transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+<div id="panorama"></div>
+
+<script>
+let sheetsData = {};
+
+async function loadSheetsData() {
+    // ВСТАВЬ СВОЮ ССЫЛКУ ИЗ ШАГА 1 МЕЖДУ КАВЫЧКАМИ:
+    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQj0JBA4U83cdPlvZCe8yI_JGdfb9CrLCrVaBwx0LqQY8TvcLP3PKNrYrVITh5I7-yWuZ0pY1ERJKiq/pub?gid=0&single=true&output=csv"; 
+    
+    try {
+        const response = await fetch(url);
+        const data = await response.text();
+        const rows = data.split("\n").slice(1); 
+        rows.forEach(row => {
+            const columns = row.split(",");
+            if (columns[0]) {
+                sheetsData[columns[0].trim()] = {
+                    name: columns[1], price: columns[2], area: columns[3], status: columns[4]
+                };
+            }
+        });
+        initPanorama();
+    } catch (error) {
+        console.error("Ошибка таблицы:", error);
+        initPanorama();
+    }
+}
+
+function initPanorama() {
+    pannellum.viewer('panorama', {
+        "type": "equirectangular",
+        "panorama": "drone.jpg", 
+        "autoLoad": true,
+        "hotSpotDebug": true, 
+        "hotSpots": [
+            {
+                "pitch": 0.0,  
+                "yaw": 0.0,   
+                "cssClass": "green-zone",
+                "createTooltipFunc": showInfoPopUp,
+                "createTooltipArgs": "id1" 
+            }
+        ]
+    });
+}
+
+function showInfoPopUp(element, id) {
+    element.addEventListener('click', function() {
+        const info = sheetsData[id];
+        if (info) {
+            alert(`🏡 ${info.name}\n💰 Цена: ${info.price}\n📐 Площадь: ${info.area}\n📌 Статус: ${info.status}`);
+        } else {
+            alert("Участок найден, но в таблице по нему пусто.");
+        }
+    });
+}
+
+loadSheetsData();
+</script>
+</body>
+</html>
