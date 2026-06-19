@@ -35,7 +35,7 @@ async function loadSheetsData() {
         const data = await response.text();
         const rows = data.split("\n").slice(1); 
         rows.forEach(row => {
-            const columns = row.split(",");
+            const columns = row.split(";");
             if (columns[0]) {
                 sheetsData[columns[0].trim()] = {
                     name: columns[1], price: columns[2], area: columns[3], status: columns[4]
