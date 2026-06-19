@@ -26,25 +26,32 @@
 <script>
 let sheetsData = {};
 
-async function loadSheetsData() {
-    // ВСТАВЬ СВОЮ ССЫЛКУ ИЗ ШАГА 1 МЕЖДУ КАВЫЧКАМИ:
+    async function loadSheetsData() {
+    // Твоя проверенная рабочая ссылка
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQj0JBA4U83cdPlvZCe8yI_JGdfb9CrLCrVaBwx0LqQY8TvcLP3PKNrYrVITh5I7-yWuZ0pY1ERJKiq/pub?gid=0&single=true&output=csv"; 
     
     try {
         const response = await fetch(url);
         const data = await response.text();
-        const rows = data.split("\n").slice(1); 
+        
+        // Разбиваем на строки и убираем пустые
+        const rows = data.split("\n").map(r => r.trim()).filter(r => r.length > 0).slice(1); 
+        
         rows.forEach(row => {
-            const columns = row.split(";");
+            const columns = row.split(";"); // Разделяем по точке с запятой
             if (columns[0]) {
-                sheetsData[columns[0].trim()] = {
-                    name: columns[1], price: columns[2], area: columns[3], status: columns[4]
+                const idKey = columns[0].trim();
+                sheetsData[idKey] = {
+                    name: columns[1] ? columns[1].trim() : "Без названия",
+                    price: columns[2] ? columns[2].trim() : "Не указана",
+                    area: columns[3] ? columns[3].trim() : "—",
+                    status: columns[4] ? columns[4].trim() : "—"
                 };
             }
         });
-        initPanorama();
+        initPanorama(); 
     } catch (error) {
-        console.error("Ошибка таблицы:", error);
+        console.error("Ошибка загрузки данных таблицы:", error);
         initPanorama();
     }
 }
