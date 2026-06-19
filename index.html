@@ -2,21 +2,31 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Интерактивная карта участков</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    
     <style>
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; font-family: sans-serif; }
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         #panorama { width: 100%; height: 100%; }
+        
+        /* Стиль для интерактивного зеленого квадрата участка */
         .green-zone {
-            width: 40px; height: 40px;
+            width: 45px;
+            height: 45px;
             background: rgba(0, 255, 0, 0.35);
             border: 2px solid #00ff00;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
-        .green-zone:hover { background: rgba(0, 255, 0, 0.6); transform: scale(1.1); }
+        .green-zone:hover {
+            background: rgba(0, 255, 0, 0.65);
+            transform: scale(1.15);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -26,19 +36,20 @@
 <script>
 let sheetsData = {};
 
-    async function loadSheetsData() {
-    // Твоя проверенная рабочая ссылка
+// 1. Функция загрузки и разбора данных из твоей Google Таблицы
+async function loadSheetsData() {
+    // Твоя проверенная ссылка на экспорт в CSV
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQj0JBA4U83cdPlvZCe8yI_JGdfb9CrLCrVaBwx0LqQY8TvcLP3PKNrYrVITh5I7-yWuZ0pY1ERJKiq/pub?gid=0&single=true&output=csv"; 
     
     try {
         const response = await fetch(url);
         const data = await response.text();
         
-        // Разбиваем на строки и убираем пустые
+        // Разбираем строки, убираем пустые и пропускаем шапку таблицы
         const rows = data.split("\n").map(r => r.trim()).filter(r => r.length > 0).slice(1); 
         
         rows.forEach(row => {
-            const columns = row.split(";"); // Разделяем по точке с запятой
+            const columns = row.split(";"); // Разделитель — точка с запятой
             if (columns[0]) {
                 const idKey = columns[0].trim();
                 sheetsData[idKey] = {
@@ -49,43 +60,54 @@ let sheetsData = {};
                 };
             }
         });
+        
+        // Запускаем тур только ПОСЛЕ того, как данные успешно скачались
         initPanorama(); 
     } catch (error) {
-        console.error("Ошибка загрузки данных таблицы:", error);
-        initPanorama();
+        console.error("Ошибка при работе с Google Таблицей:", error);
+        initPanorama(); // Если таблица упадет, хотя бы откроется сама панорама
     }
 }
 
+// 2. Инициализация панорамы и расстановка хотспотов
 function initPanorama() {
     pannellum.viewer('panorama', {
         "type": "equirectangular",
-        "panorama": "drone.jpg", 
+        "panorama": "drone.jpg", // Имя файла твоей панорамы на GitHub
         "autoLoad": true,
+        
+        // РЕЖИМ НАСТРОЙКИ КООРДИНАТ: пока стоит true, клик по экрану выдает цифры в консоль (F12 -> Console). 
+        // Когда расставишь все участки, поменяй true на false.
         "hotSpotDebug": true, 
+        
         "hotSpots": [
             {
-                "pitch": 0.0,  
-                "yaw": 0.0,   
+                "pitch": 0.0,  // Вертикальная координата (измени на свою из консоли)
+                "yaw": 0.0,    // Горизонтальная координата (измени на свою из консоли)
                 "cssClass": "green-zone",
                 "createTooltipFunc": showInfoPopUp,
-                "createTooltipArgs": "id1" 
+                "createTooltipArgs": "id1" // Связь со значением в столбце "id" твоей таблицы
             }
+            // Если нужно добавить второй участок, поставь тут запятую, скопируй блок выше и укажи "id2"
         ]
     });
 }
 
+// 3. Функция, которая красиво выводит инфу при клике на квадрат
 function showInfoPopUp(element, id) {
     element.addEventListener('click', function() {
         const info = sheetsData[id];
         if (info) {
             alert(`🏡 ${info.name}\n💰 Цена: ${info.price}\n📐 Площадь: ${info.area}\n📌 Статус: ${info.status}`);
         } else {
-            alert("Участок найден, но в таблице по нему пусто.");
+            alert(`Участок с ID "${id}" найден на панораме, но в Google Таблице данные для него не заполнены.`);
         }
     });
 }
 
+// Запуск всего процесса
 loadSheetsData();
 </script>
+
 </body>
 </html>
